@@ -1,0 +1,327 @@
+<html>
+    <head>
+        <title> My First page</title>
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+            
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+                integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+        <link type="text/css" rel="stylesheet" href="css/style.css"/>
+
+    </head>
+    <body>
+
+        <header>
+                
+            <div class="menu">
+                <ul>
+                  <li><a class="active" href="index.html">Home</a></li>
+                  <li><a href="javascript:logOut()">Log Out</a></li>
+                  
+                  
+                  
+                </ul>
+            
+            </div>
+        </header>
+
+        <div id="right-box">
+            <div id="cont2" style="opacity: 1;" >
+
+
+                <div id = "create-update" style ="display:none">
+                    <h2>Create / Edit Customer</h2>
+                    <table id = "create-update-form">
+                        <tr>
+                            <td>Name:</td>
+                            <td><input type = "text" name = "name"></td>
+                        </tr>
+                        <tr>
+                            <td>Phone:</td>
+                            <td><input type = "text" name = "phone"></td>
+                        </tr>
+                            
+                        <tr>
+                            <td>email:</td>
+                            <td><input type = "text" name = "email"></td>
+                        </tr>
+                            
+                        <tr>
+                            <td></td>
+                            <td><button id = "create-button" onClick="doCreate()">Create</button></td>
+                            <td><button id = "update-button" onClick="doUpdate()">Update</button></td>
+                        </tr>
+                    
+
+
+                    </table>
+                </div>
+
+                <div id = "display">
+                    <h2>Customers</h2>
+                    <button onClick='showCreate()'>Create</button>
+                    <table id="customer_table" class="table" >
+                        <tr>
+                            <th>id</th>
+                            <th>name</th>
+                            <th>phone</th>
+                            <th>email</th>
+                        </tr>
+                        <tr>
+
+                        </tr>
+
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+        </div>
+
+        
+            
+        
+        <script>
+            $(document).ready(function(){
+                $("#cont2").fadeTo("slow",1);
+            })
+
+            function showCreate(){
+                document.getElementById("display").style.display = "none"
+                document.getElementById("create-update").style.display = "block"
+                document.getElementById("update-button").style.display = "none"
+                document.getElementById("create-button").style.display = "block"
+
+            }
+
+            function showDisplay(){
+                
+                document.getElementById("display").style.display = "block"
+                document.getElementById("create-update").style.display = "none"
+
+
+            }
+
+            function showUpdate(thisElem){
+                var rowElement = thisElem.parentNode.parentNode;
+                customer = readCustomerFromRow(rowElement)
+                populateForm(customer)
+
+                document.getElementById('display').style.display = "none"
+                document.getElementById('update-button').style.display = "block"
+                document.getElementById('create-button').style.display = "none"
+                document.getElementById('create-update').style.display = "block"
+
+            } 
+
+            function populateForm(customer){
+                var form = document.getElementById('create-update-form')
+
+                
+                form.querySelector('input[name="name"]').value = customer.name
+                form.querySelector('input[name="phone"]').value = customer.phone_no
+                form.querySelector('input[name="email"]').value = customer.email      
+            }
+
+            function readCustomerFromRow(rowElement){
+                customer = {}
+                customer.id = rowElement.getAttribute("id");
+                customer.name = rowElement.cells[1].firstChild.textContent
+                customer.phone_no = rowElement.cells[2].firstChild.textContent
+                customer.email = rowElement.cells[3].firstChild.textContent
+
+                return customer
+                
+            }
+
+            
+            function logOut(){
+                $.ajax({
+                    url:"/logout",
+                    method:"POST",
+                    
+                    success:function(result){
+                        console.log("Logged Out" + result)
+                        window.location.replace("index.html");
+
+                    },
+                    error:function(xhr,status,error){
+                        console.log(error)
+                    }
+
+
+                })
+            }
+
+            function doDelete(thisElem){
+                var tableElement = document.getElementById('customer_table');
+                var rowElement = thisElem.parentNode.parentNode;
+                var index = rowElement.rowIndex;
+                id = rowElement.getAttribute("id");
+                $.ajax({
+                    url:"/customer/"+id,
+                    method:"DELETE",
+                    dateType:"JSON",
+                    success:function(result){
+                        tableElement.deleteRow(index);
+                    },
+                    error:function(xhr,status,error){
+                        console.log(error)
+                    }
+                })
+                
+            }
+
+            function doUpdate(){
+                customer = getCustomerFromForm()
+                console.log(customer)
+                updateServer(customer)
+                
+            }
+            
+            function updateServer(customer){
+               $.ajax({
+                    url: "/customer/"+customer.id,
+                    data: JSON.stringify(customer),
+                    method: "PUT",
+                    dataType: "JSON",
+                    contentType: "application/json; charset=utf-8",
+                    success: function (result) {
+                        console.log(result)
+                        updateTableRow(customer)
+                        showDisplay()
+                        clearForm()
+
+                    },
+                    error: function (xhr, status, error) {
+                        console.log("error" + error)
+                    }
+                })
+            }
+
+            function clearForm() {
+                    var form = document.getElementById('createUpdateForm')
+
+                    form.querySelector('input[name="name"]').value = ''
+                    form.querySelector('input[name="phone"]').value = ''
+                    form.querySelector('input[name="email"]').value = ''
+                }
+
+
+            function doCreate(){
+                //
+                cust = getCustomerFromForm()
+                console.log(cust)
+                $.ajax({
+                    url:"http://127.0.0.1:5000/customer",
+                    data:JSON.stringify(cust),
+                    method:"POST",
+                    dataType:"JSON",
+                    contentType: "application/json; charset=utf-8",
+                    success:function(result){
+                        console.log(result)
+                        addCustomerToTable(cust)
+                        //populateTable()
+                        
+                    },
+                    error:function(xhr, status,error){
+                        console.log("error: " + error)
+                    }
+
+                })
+                location.reload(true)
+                showDisplay()  
+                
+            }
+
+
+
+            function getCustomerFromForm(){
+                var form = document.getElementById("create-update-form")
+                var customer = {}
+                max_id = getID()
+
+                customer.id = max_id+1
+                customer.name = form.querySelector('input[name="name"]').value 
+                customer.phone_no = form.querySelector('input[name="phone"]').value 
+                customer.email = form.querySelector('input[name="email"]').value 
+
+                
+                return customer
+            }
+
+            function getID(){
+
+                id_s = []
+                $.ajax({
+                   url:"http://127.0.0.1:5000/customer",
+                   
+                   dataType:"JSON",
+                   success:function(result){
+                        for (customer of result){
+                            id_s.push(customer.id) 
+                        }
+                        max_id = Math.max.apply(Math, id_s)
+                        return max_id
+                   },
+                   error:function(xhr,status,error){
+                       console.log("error "+ error + " code "+ status)
+                   }
+               })
+
+               
+
+            }
+
+            function populateTable(){
+                // ajax getAll
+               $.ajax({
+                   url:"http://127.0.0.1:5000/customer",
+                   
+                   dataType:"JSON",
+                   success:function(result){
+                        for (customer of result){
+                            console.log(customer)
+                            addCustomerToTable(customer)
+                        }
+                   },
+                   error:function(xhr,status,error){
+                       console.log("error "+ error + " code "+ status)
+                   }
+               })
+                
+            }
+            function addCustomerToTable(customer) {
+                //console.log("Working")
+
+                row_el = document.getElementById("customer_table").insertRow(-1)
+                row_el.setAttribute("id", customer.id)
+
+                cell_1 = row_el.insertCell(0)
+                cell_1.innerHTML = customer.id
+
+                cell_2 = row_el.insertCell(1)
+                cell_2.innerHTML = customer.name
+
+                cell_3 = row_el.insertCell(2)
+                cell_3.innerHTML = customer.phone_no
+
+                cell_4 = row_el.insertCell(3)
+                cell_4.innerHTML = customer.email
+
+                cell_5 = row_el.insertCell(4)
+                cell_5.innerHTML = "<button onclick = 'showUpdate(this)'>Update</button>"
+
+                cell_6 = row_el.insertCell(5)
+                cell_6.innerHTML = "<button onclick = 'doDelete(this)'>Delete</button>"
+                
+
+            }
+            populateTable()
+            
+        </script>
+    </body>
+</html>
